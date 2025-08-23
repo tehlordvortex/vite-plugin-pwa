@@ -31,8 +31,9 @@ export function BuildPlugin(ctx: PWAPluginContext) {
       },
     },
     async generateBundle(_, bundle) {
-      if (await ctx.isVite6 && ctx.viteConfig.build.ssr)
-        return
+      if (await ctx.isVite6) {
+        if (this.environment.config.consumer !== "client") { return }
+      }
 
       const pwaAssetsGenerator = await ctx.pwaAssetsGenerator
       if (pwaAssetsGenerator)
@@ -44,7 +45,12 @@ export function BuildPlugin(ctx: PWAPluginContext) {
       sequential: true,
       order: ctx.userOptions?.integration?.closeBundleOrder,
       async handler() {
-        if (!ctx.viteConfig.build.ssr) {
+        let shouldBuild = !ctx.viteConfig.build.ssr;
+        if (await ctx.isVite6) {
+          shouldBuild = this.environment.config.consumer === "client";
+        }
+
+        if (shouldBuild) {
           const pwaAssetsGenerator = await ctx.pwaAssetsGenerator
           if (pwaAssetsGenerator)
             await pwaAssetsGenerator.generate()
